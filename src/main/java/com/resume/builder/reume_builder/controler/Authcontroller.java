@@ -1,0 +1,44 @@
+package com.resume.builder.reume_builder.controler;
+
+import com.resume.builder.reume_builder.Dto.Authresponese;
+import com.resume.builder.reume_builder.Dto.RegisterRequest;
+import com.resume.builder.reume_builder.service.AuthService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+import static com.resume.builder.reume_builder.util.Appconstrains.*;
+
+@RestController
+@RequiredArgsConstructor
+@Slf4j
+@RequestMapping(Auth_contoller)
+public class Authcontroller {
+
+    private final AuthService authService;
+
+
+     @PostMapping(Register_Emial)
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
+
+
+               Authresponese authresponese= authService.register(registerRequest);
+               log.info("user registered successfully with email: {}", registerRequest.getEmail());
+                return ResponseEntity.status(HttpStatus.CREATED).body(authresponese);
+
+     }
+        @GetMapping(Verify_Email)
+     public  ResponseEntity<?> verifyEmail(@RequestParam String token){
+          // todo implement email verification logic
+              log.info("inside verify email endpoint with token: {}", token);
+            authService.verifyemail(token);
+          return ResponseEntity.status(HttpStatus.OK).body(Map.of("message","email verified successfully"));
+     }
+
+}
