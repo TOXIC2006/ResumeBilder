@@ -45,7 +45,7 @@ public class Authcontroller {
 
   @PostMapping(Upload_image)
   public ResponseEntity<?> uploadProfileImage(@RequestParam("file") MultipartFile file) throws IOException {
-       Map<String,String> image=  fileUploadservice.uploadsinfgalimage(file);
-        return ResponseEntity.ok(image);
-    }
+    Map<String, String> image = fileUploadservice.uploadsinfgalimage(file);
+    return ResponseEntity.ok(image);
+  }
 }
