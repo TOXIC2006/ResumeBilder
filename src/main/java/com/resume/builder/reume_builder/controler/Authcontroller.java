@@ -43,5 +43,9 @@ public class Authcontroller {
     return ResponseEntity.status(HttpStatus.OK).body(Map.of("message", "email verified successfully"));
   }
 
-
+  @PostMapping(Upload_image)
+  public ResponseEntity<?> uploadProfileImage(@RequestParam("file") MultipartFile file) throws IOException {
+       Map<String,String> image=  fileUploadservice.uploadsinfgalimage(file);
+        return ResponseEntity.ok(image);
+    }
 }
