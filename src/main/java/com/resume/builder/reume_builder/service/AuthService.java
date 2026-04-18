@@ -1,16 +1,21 @@
 package com.resume.builder.reume_builder.service;
 
 import com.resume.builder.reume_builder.Dto.Authresponese;
+import com.resume.builder.reume_builder.Dto.LoginRequest;
 import com.resume.builder.reume_builder.Dto.RegisterRequest;
 import com.resume.builder.reume_builder.document.User;
 import com.resume.builder.reume_builder.exepction.Resourceexpection;
 import com.resume.builder.reume_builder.repository.UserRepository;
+import com.resume.builder.reume_builder.util.jwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -19,9 +24,12 @@ import java.util.UUID;
 public class AuthService {
     private final UserRepository userRepository;
     private final emailService emailService;
+    private final PasswordEncoder passwordEncoder;
+
+    private final jwtUtils jwtUtils;
 
     @Value("${app.base.url:http://localhost:8080}")
-     private  String appurl;
+    private String appurl;
 
     public Authresponese register(RegisterRequest registerRequest) {
         log.info("inside register method of authservice");
@@ -29,37 +37,40 @@ public class AuthService {
             log.error("email already exists");
             throw new Resourceexpection("message: email already exists");
         }
-        User newUser =usertodocument(registerRequest);
+        User newUser = usertodocument(registerRequest);
 
         User savedUser = userRepository.save(newUser);
-//             todo send verification email to user email with the verifiacation token
+        // todo send verification email to user email with the verifiacation token
 
-         sendVerificationEmail(newUser);
-        return toResponse( newUser);
+        sendVerificationEmail(newUser);
+        log.info(" than returing the response of authservice with user: {}", newUser);
+        return toResponse(newUser);
+
     }
 
     private void sendVerificationEmail(User newUser) {
-         try{
-             String link=appurl+"/api/auth/verify-email?token="+newUser.getVericationToken();
-             log.info("verification link: and inside the  send vefication {}",link);
-             String html="<div style=\"font-family: Arial, sans-serif;text-align:center;padding:20px;\">" +
-                         "<h2>Welcome to Resume Builder!</h2>" +
-                         "<p>Thank you for registering. Please click the button below to verify your email address:</p>" +
-                         "<p><a href=\"" + link + "\" style=\"display:inline-block;padding:12px 24px;color:#fff;background:#007bff;text-decoration:none;border-radius:4px;\">Verify Email</a></p>" +
-                         "<p>Alternatively, you can copy and paste this link into your browser:</p>" +
-                         "<p><a href=\"" + link + "\">" + link + "</a></p>" +
-                         "</div>";
+        try {
+            String link = appurl + "/api/auth/verify-email?token=" + newUser.getVericationToken();
+            log.info("verification link: and inside the  send vefication {}", link);
+            String html = "<div style=\"font-family: Arial, sans-serif;text-align:center;padding:20px;\">" +
+                    "<h2>Welcome to Resume Builder!</h2>" +
+                    "<p>Thank you for registering. Please click the button below to verify your email address:</p>" +
+                    "<p><a href=\"" + link
+                    + "\" style=\"display:inline-block;padding:12px 24px;color:#fff;background:#007bff;text-decoration:none;border-radius:4px;\">Verify Email</a></p>"
+                    +
+                    "<p>Alternatively, you can copy and paste this link into your browser:</p>" +
+                    "<p><a href=\"" + link + "\">" + link + "</a></p>" +
+                    "</div>";
 
-             emailService.sendHtmlEmail(newUser.getEmail(), "Verify Your Email Address", html);
-         }catch (Exception e){
-             log.error("failed to send verification email",e);
-              throw  new RuntimeException(" failed to send verification email"+e.getMessage());
-         }
+            emailService.sendHtmlEmail(newUser.getEmail(), "Verify Your Email Address", html);
+        } catch (Exception e) {
+            log.error("failed to send verification email", e);
+            throw new RuntimeException(" failed to send verification email" + e.getMessage());
+        }
     }
 
-
-    private  Authresponese   toResponse(User newUser){
-        log.info("inside to response method of authservice {}",newUser);
+    private Authresponese toResponse(User newUser) {
+        log.info("inside to response method of authservice {}", newUser);
         return Authresponese.builder()
                 .id(newUser.getId())
                 .name(newUser.getName())
@@ -70,30 +81,50 @@ public class AuthService {
                 .createdAt(newUser.getCreatedAt())
                 .updatedAt(newUser.getUpdatedAt())
                 .build();
-}
-         private  User usertodocument(RegisterRequest
-                                              registerRequest){
-           return User.builder()
-                   .name(registerRequest.getName())
-                   .email(registerRequest.getEmail())
-                   .password(registerRequest.getPassword())
-                   .profileurl(registerRequest.getProfileurl())
-                   .subscpriptionPlan("free")
-                   .emailverifed(false)
-                   .vericationToken(UUID.randomUUID().toString())
-                   .verficationTokenExpiry(LocalDateTime.now().plusHours(24))// the toekn expries  before the 24 hours
-                   .build();
-         }
-          public void verifyemail(String token){
-             log.info("inside verify email method of authservice with token: {}",token);
-             User usertoken = userRepository.findByVericationToken(token)
-                        .orElseThrow(() -> new Resourceexpection("invalid verification token"));
-             if(usertoken.getVerficationTokenExpiry().isBefore(LocalDateTime.now()) && !usertoken.isEmailverifed()){
-                 throw new Resourceexpection("verification token has expired");
-             }
-             usertoken.setEmailverifed(true);
-             usertoken.setVericationToken(null);
-             usertoken.setVerficationTokenExpiry(null);
-             userRepository.save(usertoken);
-          }
+    }
+
+    private User usertodocument(RegisterRequest registerRequest) {
+        return User.builder()
+                .name(registerRequest.getName())
+                .email(registerRequest.getEmail())
+                .password(passwordEncoder.encode(registerRequest.getPassword()))
+                .profileurl(registerRequest.getProfileurl())
+                .subscpriptionPlan("free")
+                .emailverifed(false)
+                .vericationToken(UUID.randomUUID().toString())
+                .verficationTokenExpiry(LocalDateTime.now().plusHours(24))// the toekn expries before the 24 hours
+                .build();
+    }
+
+    public void verifyemail(String token) {
+        log.info("inside verify email method of authservice with token: {}", token);
+        User usertoken = userRepository.findByVericationToken(token)
+                .orElseThrow(() -> new Resourceexpection("invalid verification token"));
+        if (usertoken.getVerficationTokenExpiry().isBefore(LocalDateTime.now()) && !usertoken.isEmailverifed()) {
+            throw new Resourceexpection("verification token has expired");
+        }
+        usertoken.setEmailverifed(true);
+        usertoken.setVericationToken(null);
+        usertoken.setVerficationTokenExpiry(null);
+        userRepository.save(usertoken);
+    }
+
+    public Authresponese login(LoginRequest loginRequest) {
+        User ExistingUser = userRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new Resourceexpection("invalid email or password"));
+
+        if (loginRequest.getPassword() == null
+                || !passwordEncoder.matches(loginRequest.getPassword(), ExistingUser.getPassword())) {
+            throw new UsernameNotFoundException("invalid email or password");
+        }
+        if (ExistingUser.isEmailverifed() == false) {
+            throw new Resourceexpection("Please  verfiy your email before logging in");
+        }
+        String token = jwtUtils.generateToken(ExistingUser.getId());
+
+        Authresponese returnvaule = toResponse(ExistingUser);
+        returnvaule.setToken(token);
+
+        return returnvaule;
+    }
 }

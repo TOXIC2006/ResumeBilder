@@ -1,6 +1,7 @@
 package com.resume.builder.reume_builder.controler;
 
 import com.resume.builder.reume_builder.Dto.Authresponese;
+import com.resume.builder.reume_builder.Dto.LoginRequest;
 import com.resume.builder.reume_builder.Dto.RegisterRequest;
 import com.resume.builder.reume_builder.service.AuthService;
 import com.resume.builder.reume_builder.service.FileUploadservice;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +27,7 @@ public class Authcontroller {
 
   private final AuthService authService;
   private final FileUploadservice fileUploadservice;
+
 
   @PostMapping(Register_Emial)
   public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
@@ -47,5 +50,18 @@ public class Authcontroller {
   public ResponseEntity<?> uploadProfileImage(@RequestParam("file") MultipartFile file) throws IOException {
     Map<String, String> image = fileUploadservice.uploadsinfgalimage(file);
     return ResponseEntity.ok(image);
+  }
+
+  @PostMapping("/Login")
+  public ResponseEntity<?> login( @Valid @RequestBody LoginRequest loginRequest) {
+    Authresponese authresponese = authService.login(loginRequest);
+    log.info("user logged in successfully with email: {}", loginRequest.getEmail());
+    return ResponseEntity.ok(authresponese);
+
+  }
+
+  @GetMapping("/testvalidation")
+  public String testvalidation() {
+    return "validation passed";
   }
 }

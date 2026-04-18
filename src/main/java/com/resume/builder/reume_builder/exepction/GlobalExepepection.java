@@ -25,7 +25,7 @@ public class GlobalExepepection {
     @ExceptionHandler(Resourceexpection.class)
     public ResponseEntity<Map<String, Object> >handleGenericException(Resourceexpection ex) {
         Map<String, Object> errorResponse = new HashMap<>();
-        errorResponse.put("error","Resourcefound");
+        errorResponse.put("status","Resourcefound");
         errorResponse.put("error", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
 
