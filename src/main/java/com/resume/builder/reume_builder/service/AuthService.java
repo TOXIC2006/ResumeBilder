@@ -110,8 +110,11 @@ public class AuthService {
     }
 
     public Authresponese login(LoginRequest loginRequest) {
-        User ExistingUser = userRepository.findByEmail(loginRequest.getEmail())
-                .orElseThrow(() -> new Resourceexpection("invalid email or password"));
+        User ExistingUser = userRepository.findByEmail(loginRequest.getEmail());
+         if(ExistingUser==null){
+             throw new UsernameNotFoundException("invalid email or password");
+         }
+
 
         if (loginRequest.getPassword() == null
                 || !passwordEncoder.matches(loginRequest.getPassword(), ExistingUser.getPassword())) {
@@ -126,5 +129,27 @@ public class AuthService {
         returnvaule.setToken(token);
 
         return returnvaule;
+    }
+
+    public void resendVerificationEmail(String email) {
+        User useremail= userRepository.findByEmail(email);
+         if( useremail.isEmailverifed() ){
+                throw new Resourceexpection("email verified");
+         }
+          useremail.setVericationToken(UUID.randomUUID().toString());
+          useremail.setVerficationTokenExpiry(LocalDateTime.now().plusHours(24));
+          useremail.setEmailverifed(true);
+           sendVerificationEmail(useremail);
+          userRepository.save(useremail);
+
+
+
+
+    }
+
+
+    public Authresponese getprofile(Object princpleobject) {
+         User user = (User) princpleobject;
+         return toResponse(user);
     }
 }

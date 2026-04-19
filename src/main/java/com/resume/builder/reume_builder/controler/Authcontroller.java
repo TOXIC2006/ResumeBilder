@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,16 +53,35 @@ public class Authcontroller {
     return ResponseEntity.ok(image);
   }
 
-  @PostMapping("/Login")
+  @PostMapping(Login)
   public ResponseEntity<?> login( @Valid @RequestBody LoginRequest loginRequest) {
     Authresponese authresponese = authService.login(loginRequest);
     log.info("user logged in successfully with email: {}", loginRequest.getEmail());
     return ResponseEntity.ok(authresponese);
 
   }
+   @PostMapping( resendEmail)
+   public ResponseEntity<?> resendemialverifaction(@RequestBody  Map< String, String> request) {
+     String email = request.get("email");
+      if( email == null || email.isEmpty()) {
+        log.error("email is required to resend verification email");
+        return ResponseEntity.badRequest().body(Map.of("error", "email is required"));
+      }
+       authService.resendVerificationEmail(email);
+     log.info("verification email resent successfully to email: {}", email);
+     return ResponseEntity.ok(Map.of("message", "verification email resent successfully"));
 
-  @GetMapping("/testvalidation")
-  public String testvalidation() {
-    return "validation passed";
-  }
+
+   }
+    @GetMapping(Getprofile)
+    public ResponseEntity<?> getprofile(Authentication authentication){
+//     step 1 get the princoiple object
+       Object  princpleobject= authentication.getPrincipal();
+       Authresponese authresponese = authService.getprofile(princpleobject);
+       log.info("profile retrieved successfully for user: {}", authresponese.getEmail());
+       return ResponseEntity.ok(authresponese);
+
+    }
+
+
 }

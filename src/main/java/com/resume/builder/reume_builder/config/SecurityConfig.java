@@ -36,7 +36,11 @@ public class SecurityConfig {
    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
       http.cors(cors -> cors.configurationSource(corsConfigurationSource1()))
             .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth/**", "/error", "/actuator/**").permitAll()
+            .authorizeHttpRequests(auth -> auth.requestMatchers("/api/auth",
+                            "/api/auth/register", "/error",
+                            "/actuator/**","/api/auth/verify-email",
+                             "/api/auth/upload-image","/api/auth/Login"
+                            ,"/api/auth/resend-verification-email").permitAll()
                   .anyRequest().authenticated())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .addFilterBefore(jwtAuthenitacationfilter, UsernamePasswordAuthenticationFilter.class)
