@@ -17,7 +17,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Document(collation = "resume")
+@Document(collection = "resume")
 public class Resume {
       @Id
       @JsonProperty("id")
